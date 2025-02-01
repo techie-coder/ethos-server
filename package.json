@@ -11,14 +11,14 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-<<<<<<< HEAD
     "express": "^4.21.2",
     "mongoose": "^8.9.6",
-    "nodemailer": "^6.10.0"
-=======
+    "nodemailer": "^6.10.0",
     "dot-env": "^0.0.1",
     "express": "^4.21.2",
-    "mongoose": "^8.9.6"
->>>>>>> 4cccab98ca02a5095dc93638ec45387a4137c4e3
+    "mongoose": "^8.9.6",
+    "dot-env": "^0.0.1",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.6",
   }
 }
