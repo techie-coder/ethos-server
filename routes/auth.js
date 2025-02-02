@@ -1,8 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
-const User = require("../model/Users");
+const dotenv = require('dotenv');
+
+const User = require("../models/user");
 const { secureOTP, sendOTP } = require("../utils/otpsender");
+const authenticate = require('../middleware/authenticate');
+
+dotenv.config()
 
 router.post("/generate-otp", async (req, res) => {
   const email = req.body.email;
@@ -19,7 +24,7 @@ router.post("/generate-otp", async (req, res) => {
     if (user.isBlocked) {
       const currentTime = new Date();
       if (currentTime < user.blockUntil) {
-        return res.status(403).send("Account blocked. Try after some time.");
+        return res.status(403).json({message: "Account blocked. Try after some time."});
       } else {
         user.isBlocked = false;
         user.OTPAttempts = 0;
@@ -33,10 +38,10 @@ router.post("/generate-otp", async (req, res) => {
     if (lastOTPTime && currentTime - lastOTPTime < 60000) {
       return res
         .status(403)
-        .send("Minimum 1-minute gap required between OTP requests");
+        .json({message: "Minimum 1-minute gap required between OTP requests"});
     }
 
-    const OTP = generateOTP();
+    const OTP = secureOTP();
     user.OTP = OTP;
     user.OTPCreatedTime = currentTime;
 
@@ -44,7 +49,7 @@ router.post("/generate-otp", async (req, res) => {
 
     sendOTP(email, OTP);
 
-    res.status(200).send("OTP sent successfully");
+    res.status(200).json({message: "OTP sent successfully"});
   } catch (err) {
     console.log(err);
     res.status(500).send("Server error");
@@ -59,14 +64,14 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ email: email });
 
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).json({message: "User not found"});
     }
 
     // Check if user account is blocked
     if (user.isBlocked) {
       const currentTime = new Date();
       if (currentTime < user.blockUntil) {
-        return res.status(403).send("Account blocked. Try after some time.");
+        return res.status(403).json({message: "Account blocked. Try after some time."});
       } else {
         user.isBlocked = false;
         user.OTPAttempts = 0;
@@ -87,7 +92,7 @@ router.post("/login", async (req, res) => {
 
       await user.save();
 
-      return res.status(403).send("Invalid OTP");
+      return res.status(403).json({message: "Invalid OTP"});
     }
 
     // Check if OTP is within 5 minutes
@@ -95,7 +100,7 @@ router.post("/login", async (req, res) => {
     const currentTime = new Date();
 
     if (currentTime - OTPCreatedTime > 5 * 60 * 1000) {
-      return res.status(403).send("OTP expired");
+      return res.status(403).json({message: "OTP expired"});
     }
 
     // Generate JWT
@@ -109,13 +114,31 @@ router.post("/login", async (req, res) => {
     user.OTPAttempts = 0;
 
     await user.save();
-    res.json({ token });
+    res.json({ token: token });
     console.log("User logged in successfully");
   } catch (err) {
     console.log(err);
-    res.status(500).send("Server error");
+    res.status(500).json({message: "Server error"});
   }
 });
+
+router.post('/refresh-token', authenticate, async (req, res) => {
+    email = req.email;
+
+    try{
+        let user = await User.findOne({email: email})
+        if(user){
+            const token = jwt.sign({email: email}, process.env.SECRET_KEY, { expiresIn: "30d" })
+            res.status(200).json({ token: token });
+            console.log('Refresh token generated!')
+        }else{
+            res.status(401).send("User not found!")
+        }
+    }catch(err){
+        res.status(500).send("Error while getting refresh token")
+    }
+})
+
 
 module.exports = router;
 
