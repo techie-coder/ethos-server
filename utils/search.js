@@ -1,6 +1,6 @@
 
-const CLIENT_ID = "b7e9610c657f4ea0b0342417f3cd0764"
-const CLIENT_SECRET = "ced93a72d74b4e959dfc25124d7a5331"
+//const CLIENT_ID = "b7e9610c657f4ea0b0342417f3cd0764"
+//const CLIENT_SECRET = "ced93a72d74b4e959dfc25124d7a5331"
 
 /**
  * 
@@ -69,7 +69,4 @@ async function searchSpotify(token, query) {
     console.log(data)
     return { tracks, albums, playlists, artists };
 }
-//const token = getAccessToken(CLIENT_ID, CLIENT_SECRET)
-searchSpotify('BQAdIE1qbyAQ7Yay-a_9C1K3B89c14nop243jyUgDCRQD1tMRacrOO37v15mwsnOgY6Sbyx8f4DVv2IRjBywENEJL5p8ga-CFMDwXB4aU2Glcy606sx7n0C3GviTa2UKvOGp7u19xFI'
-     , "Ed Sheeran").then(results => console.log(results));
-//module.exports = { getAccessToken, searchSpotify };
+module.exports = { getAccessToken, searchSpotify };
