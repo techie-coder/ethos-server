@@ -1,7 +1,7 @@
 const crypto = require('crypto')
 const nodemailer = require('nodemailer');
 
-const secureOTP = () => crypto.randomInt(100000, 999999)
+const secureOTP = () => crypto.randomInt(100000, 999999).toString()
 
 const sendOTP = (email, otp) => {
     const sender = nodemailer.createTransport({
