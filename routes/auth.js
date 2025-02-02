@@ -140,5 +140,11 @@ router.post('/refresh-token', authenticate, async (req, res) => {
 })
 
 
+router.get('/get-email', authenticate, (req, res) => {
+  const email = req.email;
+  res.status(200).json({email: email});
+})
+
+
 module.exports = router;
 
