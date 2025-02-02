@@ -18,27 +18,48 @@ async function getAccessToken() {
 async function searchSpotify(query) {
     const token = await getAccessToken();
     const limit = 10;
-    const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`;
+    const types = encodeURIComponent("track,artist,album,playlist");
+    const endpoint = "https://api.spotify.com/v1/search";
+    
+    const url = `${endpoint}?q=${encodeURIComponent(query)}&type=${types}&limit=${limit}`;
 
     const response = await fetch(url, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
     });
-
     const data = await response.json();
-    console.log(data);
     if (!data.tracks || !data.tracks.items.length) {
         console.log("No results found.");
         return [];
     }
-
-    return data.tracks.items.map(track => ({
+    const tracks = data.tracks?.items.map(track => ({
         songName: track.name,
         artistName: track.artists.map(artist => artist.name).join(", "),
         albumName: track.album.name,
-        albumCover:  track.album.images.length > 0 ? track.album.images[0].url : null
-    }));
+        albumCover: track.album.images.length > 0 ? track.album.images[0].url : null
+    })) || [];
+
+    const albums = data.albums?.items.map(album => ({
+        albumName: album.name,
+        artistName: album.artists.map(artist => artist.name).join(", "),
+        albumCover: album.images.length > 0 ? album.images[0].url : null,
+        spotifyUrl: album.external_urls.spotify
+    })) || [];
+
+    const playlists = data.playlists?.items.map(playlist => ({
+        playlistName: playlist.name==null ?"":playlist.name,
+        owner: playlist.owner.display_name,
+        playlistCover: playlist.images.length > 0 ? playlist.images[0].url : null,
+        spotifyUrl: playlist.external_urls.spotify
+    })) || [];
+
+    const artists = data.artist?.items.map(artist => ({
+        artistName: artist.name,
+        artistCover: artist.images.length > 0 ? artist.images[0].url : null
+    })) || [];
+
+    return { tracks, albums,artists, playlists };
 }
 
-searchSpotify("Blinding lights").then(results => console.log(results));
+searchSpotify("The weeknd").then(results => console.log(results));
