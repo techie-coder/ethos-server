@@ -1,7 +1,13 @@
 
-//const CLIENT_ID = "fe771e55e0c341f49faaae73243de8dc"
-//const CLIENT_SECRET = "ba2712d797cb4c3c9d9a1766da027319"
+//const CLIENT_ID = "b7e9610c657f4ea0b0342417f3cd0764"
+//const CLIENT_SECRET = "ced93a72d74b4e959dfc25124d7a5331"
 
+/**
+ * 
+ * @param {Spotify API client id} client_id 
+ * @param {Spotify API client secret} client_secret 
+ * @returns The access token that is required to access the spotify api.
+ */
 async function getAccessToken(client_id, client_secret) {
     const response = await fetch("https://accounts.spotify.com/api/token", {
         method: "POST",
@@ -12,14 +18,20 @@ async function getAccessToken(client_id, client_secret) {
         body: "grant_type=client_credentials",
     });
     const data = await response.json();
-    console.log(data);
+
     return data.access_token;
 }
-
+/**
+ * 
+ * @param {The access token provided by spotify api} token 
+ * @param {The term to be searched} query 
+ * @returns A list contaiing the tracks, albums, playlists and artists as arrays
+ */
 async function searchSpotify(token, query) {
-    
-    const limit = 10;
-    const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`;
+    const limit =10
+    const endpoint = "https://api.spotify.com/v1/search";
+    const types = encodeURIComponent("track,album,playlist,artist");
+    const url = `${endpoint}?q=${encodeURIComponent(query)}&type=${types}&limit=${limit}`;
 
     const response = await fetch(url, {
         headers: {
@@ -28,18 +40,33 @@ async function searchSpotify(token, query) {
     });
 
     const data = await response.json();
-    console.log(data);
-    if (!data.tracks || !data.tracks.items.length) {
-        console.log("No results found.");
-        return [];
-    }
-
-    return data.tracks.items.map(track => ({
+    const tracks = data.tracks?.items.map(track => ({
         songName: track.name,
         artistName: track.artists.map(artist => artist.name).join(", "),
         albumName: track.album.name,
-        albumCover:  track.album.images.length > 0 ? track.album.images[0].url : null
-    }));
-}
+        albumCover: track.album.images.length > 0 ? track.album.images[0].url : null
+    })) || [];
 
+    const albums = data.albums?.items.map(album => ({
+        albumName: album.name,
+        artistName: album.artists.map(artist => artist.name).join(", "),
+        albumCover: album.images.length > 0 ? album.images[0].url : null
+    })) || [];
+
+    const playlists = data.playlists?.items
+    ?.filter(playlist => playlist && playlist.name)  // Ensure valid playlists
+    ?.map(playlist => ({
+        playlistName: playlist.name,
+        owner: playlist.owner?.display_name || "Unknown",  // Handle missing owner
+        playlistCover: playlist.images?.length > 0 ? playlist.images[0].url : null
+    })) || [];
+
+
+    const artists = data.artists?.items?.map(artist => ({
+        artistName: artist.name,
+        artistCover: artist.images.length > 0 ? artist.images[0].url : null
+    })) 
+    console.log(data)
+    return { tracks, albums, playlists, artists };
+}
 module.exports = { getAccessToken, searchSpotify };
