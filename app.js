@@ -10,12 +10,14 @@ const app = express()
 
 const authRoutes = require("./routes/auth");
 const searchRoutes = require("./routes/search");
+const getAudioUrl = require('./routes/getAudioUrl');
 
 app.use(express.json());
 app.use(cors())
 
 app.use("/auth", authRoutes);
 app.use("/search", searchRoutes);
+app.use("/get-audio-url", getAudioUrl);
 
 
 app.get("/", (req, res) => {
