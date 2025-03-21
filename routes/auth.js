@@ -10,21 +10,27 @@ const authenticate = require('../middleware/authenticate');
 dotenv.config()
 
 router.post("/generate-otp", async (req, res) => {
-  const email = req.body.email;
+  const { email } = req.body;
+
+  // Validate email
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
 
   try {
-    let user = await User.findOne({ email: email });
+    let user = await User.findOne({ email });
 
     // If user does not exist, create a new user
     if (!user) {
-      user = new User({ email: email });
+      user = await User.create({ email }); // Use create instead of new User
+      console.log("Created new user:", email);
     }
 
-    // If user is blocked, return an error
+    // Check if user is blocked
     if (user.isBlocked) {
       const currentTime = new Date();
       if (currentTime < user.blockUntil) {
-        return res.status(403).json({message: "Account blocked. Try after some time."});
+        return res.status(403).json({ message: "Account blocked. Try after some time." });
       } else {
         user.isBlocked = false;
         user.OTPAttempts = 0;
@@ -35,24 +41,21 @@ router.post("/generate-otp", async (req, res) => {
     const lastOTPTime = user.OTPCreatedTime;
     const currentTime = new Date();
 
-    if (lastOTPTime && currentTime - lastOTPTime < 60000) {
-      return res
-        .status(403)
-        .json({message: "Minimum 1-minute gap required between OTP requests"});
+    if (lastOTPTime && (currentTime - lastOTPTime) < 60000) {
+      return res.status(403).json({ message: "Minimum 1-minute gap required between OTP requests" });
     }
 
     const OTP = secureOTP();
     user.OTP = OTP;
     user.OTPCreatedTime = currentTime;
-
     await user.save();
 
-    sendOTP(email, OTP);
-
-    res.status(200).json({message: "OTP sent successfully"});
+    await sendOTP(email, OTP);
+    
+    res.status(200).json({ message: "OTP sent successfully" });
   } catch (err) {
-    console.log(err);
-    res.status(500).send("Server error");
+    console.error("Error in generate-otp:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
