@@ -32,7 +32,7 @@ mongoose
   })
   .then(() => {
     console.log("Connected to MongoDB");
-    const PORT = 3000;
+    const PORT = 8080;
     app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
   })
   .catch((err) => console.log(err));

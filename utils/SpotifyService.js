@@ -97,18 +97,106 @@ class SpotifyService {
       throw error;
     }
   }
+
+  
+  async getPlaylistTracks(playlistId) {
+    try {
+      const data = await this.spotifyApi.getPlaylistTracks(playlistId, { limit: 50 });
+      return data.body.items.map((item) => ({
+        name: item.track.name,
+        artist: item.track.artists.map((a) => a.name).join(", "),
+      }));
+    } catch (err) {
+      console.error(`Error fetching playlist ${playlistId}:`, err);
+      return [];
+    }
+  }
+  /*
+  async getNewReleases(limit = 10) {
+  
+    try {
+      const data = await this.spotifyApi.getNewReleases({ limit });
+      const albums = data.body.albums.items.map((album) => ({
+        name: album.name,
+        artist: album.artists.map((a) => a.name).join(", "),
+        image: album.images[0]?.url || "No image available",
+      }));
+  
+      console.log("\n🔥 New Releases 🔥");
+      albums.forEach((album, index) => {
+        console.log(`${index + 1}. 🎵 ${album.name} - ${album.artist}`);
+        console.log(`   🖼  Image: ${album.image}\n`);
+      });
+  
+      return albums;
+    } catch (err) {
+      console.error("Error fetching new releases:", err);
+      return [];
+    }
+  }
+    */
+  async getAlbumPopularity(albumId) {
+    try {
+      const tracks = await this.spotifyApi.getAlbumTracks(albumId, { limit: 1 });
+      if (tracks.body.items.length > 0) {
+        const track = await this.spotifyApi.getTrack(tracks.body.items[0].id);
+        return track.body.popularity;
+      }
+    } catch (err) {
+      console.error("Error fetching album popularity:", err);
+    }
+    return 0;
+  }
+  
+  // Fetch and Sort New Releases by Popularity
+  async getSortedNewReleases() {
+  
+    try {
+      const data = await this.spotifyApi.getNewReleases({ limit: 50 });
+      let albums = await Promise.all(
+        data.body.albums.items.map(async (album) => {
+          const popularity = await this.getAlbumPopularity(album.id);
+          return {
+            name: album.name,
+            artist: album.artists.map((a) => a.name).join(", "),
+            image: album.images[0]?.url || "No image available",
+            popularity: popularity,
+          };
+        })
+      );
+  
+      // Sort by popularity (descending)
+      albums.sort((a, b) => b.popularity - a.popularity);
+      const top10 = albums.slice(0, 10);
+  
+      console.log("\n🔥 Top 10 New Releases by Popularity 🔥");
+      top10.forEach((album, index) => {
+        console.log(`${index + 1}. 🎵 ${album.name} - ${album.artist}`);
+        console.log(`   ⭐ Popularity: ${album.popularity}`);
+        console.log(`   🖼  Image: ${album.image}\n`);
+      });
+  
+      return top10;
+    } catch (err) {
+      console.error("Error fetching sorted new releases:", err);
+      return [];
+    }
+  }
+
 }
 
-/*
+
 (async () => {
   const spotifyService = new SpotifyService(process.env.SPOTIFY_CLIENT_ID, process.env.SPOTIFY_CLIENT_SECRET);
   await spotifyService.authenticate();
-  
+  //console.log(await spotifyService.getPlaylistTracks("2YRe7HRKNRvXdJBp9nXFza"))
+  //console.log(await spotifyService.fetchPlaylistDetails("Top 50 - Global"))
   // Now tokens will be refreshed automatically when needed
+  /*
   console.log(await spotifyService.searchTrack('Blinding Lights'));
   console.log(await spotifyService.getArtistAlbums('The Weeknd'));
   console.log(await spotifyService.getArtistTracks('The Weeknd'));
   console.log(await spotifyService.getAlbumTracks('After Hours'));
+  */
 })();
-*/
 module.exports = SpotifyService;

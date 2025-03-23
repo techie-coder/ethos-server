@@ -25,7 +25,7 @@ search.get('/track/:trackName', authenticate, async (req, res) => {
     }
 })
 
-search.get('/album/:albumName', authenticate, async (req, res) => {
+search.get('/album/:albumName/tracks', authenticate, async (req, res) => {
     const { albumName } = req.params;  // Fix: Correctly extract parameter
     try {
         const results = await spotifyService.getAlbumTracks(albumName)
@@ -38,5 +38,34 @@ search.get('/album/:albumName', authenticate, async (req, res) => {
         res.status(500).json({ message: "Error searching for album", error: err.message })
     }
 })
+
+search.get('/artists/:artistName/albums', authenticate, async (req, res) => {
+    const { artistName } = req.params;  
+    try {
+        const results = await spotifyService.getArtistAlbums(artistName)
+        if (!results) {
+            return res.status(404).json({ message: "Albums not found" });
+        }
+        res.status(200).json(results)
+    } catch(err) {
+        console.error(err)
+        res.status(500).json({ message: "Error searching for album", error: err.message })
+    }
+})
+
+search.get('/artists/:artistName/tracks', async (req, res) => {
+    const { artistName } = req.params;  
+    try {
+        const results = await spotifyService.getArtistTracks(artistName)
+        if (!results) {
+            return res.status(404).json({ message: "Tracks not found" });
+        }
+        res.status(200).json(results)
+    } catch(err) {
+        console.error(err)
+        res.status(500).json({ message: "Error searching for album", error: err.message })
+    }
+})
+
 
 module.exports = search;
